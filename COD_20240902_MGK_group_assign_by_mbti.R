@@ -2,23 +2,22 @@ library(tidyverse)
 
 # Loading student list
 
-readxl::read_excel("/Volumes/macdrive/Dropbox/Inha/5_Lectures/2024/BPE3206/attendance book (20242,BPE3206-001).xlsx") %>% 
+data <- readxl::read_excel("/Volumes/Macintosh HD/Users/minsikkim/Dropbox (Personal)/Inha/5_Lectures/2024/BPE3206/attendance book (20242,BPE3206-001).xlsx") %>% 
         .$`학생명`
-
-mbti <- c("INFP", "INFP", "ENFJ", "ENFJ", "ISTJ", "ISTJ", 
-          "ESFP", "ESFP", "ENTP", "ENTP", "INTJ", "INTJ",
-          "INFJ", "INFJ", "ESTJ", "ESTJ", "ENTJ", "ENTJ", 
-          "ISFJ", "ISFJ", "ESFJ", "ESFJ", "ISTP", "ISTP")
+# 
+# mbti <- c("INFP", "INFP", "ENFJ", "ENFJ", "ISTJ", "ISTJ", 
+#           "ESFP", "ESFP", "ENTP", "ENTP", "INTJ", "INTJ",
+#           "INFJ", "INFJ", "ESTJ", "ESTJ", "ENTJ", "ENTJ", 
+#           "ISFJ", "ISFJ", "ESFJ", "ESFJ", "ISTP", "ISTP")
 
 # 조의 수 설정 (예: 4개의 조)
 num_groups <- 6
 
 # 학생 ID 생성 (학생 1, 학생 2, ..., 학생 24)
-data <- readxl::read_excel("/Volumes/macdrive/Dropbox/Inha/5_Lectures/2024/BPE3206/attendance book (20242,BPE3206-001).xlsx") %>% 
-        .$`학생명` %>% 
-        data.frame(Student = .)
-
-data$MBTI <- mbti
+data <- readxl::read_excel("/Volumes/Macintosh HD/Users/minsikkim/Dropbox (Personal)/Inha/5_Lectures/2024/BPE3206/attendance book (20242,BPE3206-001).xlsx") %>% 
+        rename(Student = `학생명`) %>%
+        select(Student, MBTI)
+data %>% view
 
 
 # MBTI similarity
