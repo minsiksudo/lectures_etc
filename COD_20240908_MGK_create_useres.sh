@@ -16,7 +16,7 @@ fi
 
 # Read through the file and create users
 while IFS= read -r user_id; do
-    username="user_$user_id" # Prefixing with "user_"
+    username="$user_id" # Prefixing with "user_"
     
     # Create the user with home directory and default shell
     sudo useradd -m "$username" -s /bin/bash
