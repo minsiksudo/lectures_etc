@@ -1,0 +1,359 @@
+---
+title: "COD_20241025_science_wide_author_database.rmd"
+author: "Minsik Kim"
+date: "2024-10-21"
+output:
+    rmdformats::downcute:
+        downcute_theme: "chaos"
+        code_folding: hide
+        fig_width: 6
+        fig_height: 6
+        df_print: paged
+#mainfont: Times New Roman
+editor_options: 
+  chunk_output_type: inline
+---
+
+<style>
+  /* Default light mode styles */
+  .reactable {
+    background-color: #ffffff !important; /* Light background */
+    color: #000000 !important;            /* Dark text */
+    border-color: #cccccc !important;     /* Light border */
+  }
+
+</style>
+
+<style>
+  body {
+    font-family: "Times New Roman", serif;
+  }
+</style>
+
+## Loading packages
+
+```{r setup, warning = FALSE}
+#===============================================================================
+#BTC.LineZero.Header.1.1.0
+#===============================================================================
+#R Markdown environment setup and reporting utility.
+#===============================================================================
+#RLB.Dependencies:
+#   knitr, magrittr, pacman, rio, rmarkdown, rmdformats, tibble, yaml
+#===============================================================================
+#Input for document parameters, libraries, file paths, and options.
+#=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=
+
+
+path_working <- 
+        ifelse(sessionInfo()[1]$R.version$platform == "x86_64-pc-linux-gnu",
+               "/mnt/4T_samsung/Dropbox/",
+               ifelse(sessionInfo()[1]$R.version$platform == "aarch64-apple-darwin20",
+                      "/Volumes/macdrive/Dropbox/", 
+                      "/Users/minsikkim/Dropbox (Personal)/"))
+path_library <- 
+        ifelse(sessionInfo()[1]$R.version$platform == "x86_64-pc-linux-gnu",
+               "/home/bagel/R_lib/",
+               "/Library/Frameworks/R.framework/Resources/library/")
+
+
+str_libraries <- c("readxl", "phyloseq", "tidyverse", "pacman", "yaml",
+                   "DESeq2",
+                   "ggplot2", "vegan", "microbiome","ggpubr", "viridis",
+                   "decontam", "gridExtra", "ggpubr", "lme4", "lmerTest",
+                   "writexl", "harrietr", "Maaslin2", "ggtext", "mgcv",
+                   "ggpmisc", "janitor", "breakaway", "decontam",
+                   "reactablefmtr", "DT", "htmltools", "bugphyzz")
+        
+YAML_header <-
+'---
+title: "COD_20241025_science_wide_author_database.rmd"
+author: "Minsik Kim"
+date: "2024.10.25"
+output:
+    rmdformats::downcute:
+        downcute_theme: "chaos"
+        code_folding: hide
+        fig_width: 11
+        fig_height: 11
+---'
+
+seed <- "20241025"
+
+#=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+#Loads libraries, file paths, and other document options.
+#=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+FUN.LineZero.Boot <- function() {
+    .libPaths(path_library)
+
+    require(pacman)
+    pacman::p_load(c("knitr", "rmarkdown", "rmdformats", "yaml"))
+
+    knitr::opts_knit$set(root.dir = path_working)
+
+    str_libraries |> unique() |> sort() -> str_libraries
+    pacman::p_load(char = str_libraries)
+
+    set.seed(seed)
+}
+
+FUN.LineZero.Boot()
+#=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+#Outputs R environment report.
+#=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+FUN.LineZero.Report <- function() {
+    cat("Line Zero Environment:\n\n")
+    paste("R:", pacman::p_version(), "\n") |> cat()
+    cat("Libraries:\n")
+    for (str_libraries in str_libraries) {
+        paste(
+            "    ", str_libraries, ": ", pacman::p_version(package = str_libraries),
+            "\n", sep = ""
+        ) |> cat()
+    }
+    paste("\nOperating System:", pacman::p_detectOS(), "\n") |> cat()
+    paste("    Library Path:", path_library, "\n") |> cat()
+    paste("    Working Path:", path_working, "\n") |> cat()
+    paste("Seed:", seed, "\n\n") |> cat()
+    cat("YAML Header:\n")
+    cat(YAML_header)
+}
+FUN.LineZero.Report()
+
+```
+
+# Description of fields
+
+```{r warning=FALSE}
+
+
+read_excel("Git/lectures_etc/Table_1_Authors_career_2023_pubs_since_1788_wopp_extracted_202408.xlsx") %>%
+        reactable::reactable(sortable = T, searchable = T, showPageSizeOptions = T)
+
+```
+
+
+# Data analysis
+
+## Loading data
+
+### Raw data - affiliated with Korean institution
+
+```{r warning=FALSE}
+
+data_raw <- read_excel("Git/lectures_etc/Table_1_Authors_career_2023_pubs_since_1788_wopp_extracted_202408.xlsx", sheet = 2)
+
+data_raw %>%
+        subset(., .$cntry == "kor") %>%
+        reactable::reactable(sortable = T, searchable = T, showPageSizeOptions = T)
+
+```
+
+### Summary statistics: Korean institution's average rank and number of researchers
+
+```{r}
+data_raw %>%
+        #subset(., .$cntry == "kor") %>%
+        
+        group_by(inst_name) %>%
+        mutate(University = ifelse(grepl("University|university|School|Yonsei|Institute of Science and Technology", inst_name), "University", "Non-university"),
+               .before = "inst_name") %>%
+        mutate(inst_name = case_when(grepl("Daegu Gyeongbuk Institute of Science and Technology", inst_name)~"DGIST", 
+                                     grepl("Gwangju Institute of Science and Technology", inst_name)~"GIST", 
+                                     grepl("Korea Advanced Institute of Science and Technology", inst_name)~"KAIST", 
+                                     grepl("Ulsan National Institute of Science and Technology", inst_name)~"UNIST", 
+                                     grepl("Seoul National University", inst_name)~"Seoul National University",
+                                     grepl("Yonse", inst_name)~"Yonsei University", 
+                                     .default = inst_name)) %>%
+        summarise(University = min(University),
+                  `Average rank` = mean(rank) %>% round(2), `SD rank` = sd(rank) %>% round(2), `Number of researchers` = n()) %>% 
+        
+        #subset(., .$`Number of researchers`> 10) %>% 
+        mutate(`Rank of institution's mean rank (ROK)` = rank(`Average rank`, ,ties.method = "min"),
+               `Rank of institution's number of researchers (ROK)` = rank(`Number of researchers`,ties.method = "max")) %>%
+        reactable::reactable(sortable = T, searchable = T, showPageSizeOptions = T, groupBy = c("University") )
+```
+
+### Matrices of Korean Universities
+
+```{r}
+
+data_raw %>%
+        subset(., .$cntry == "kor") %>%
+        group_by(inst_name) %>%
+        mutate(University = ifelse(grepl("University|university|School|Yonsei|Institute of Science and Technology", inst_name), "University", "Non-university"),
+               .before = "inst_name") %>%
+        mutate(inst_name = case_when(grepl("Daegu Gyeongbuk Institute of Science and Technology", inst_name)~"DGIST", 
+                                     grepl("Gwangju Institute of Science and Technology", inst_name)~"GIST", 
+                                     grepl("Korea Advanced Institute of Science and Technology", inst_name)~"KAIST", 
+                                     grepl("Ulsan National Institute of Science and Technology", inst_name)~"UNIST", 
+                                     grepl("Seoul National University", inst_name)~"Seoul National University",
+                                     grepl("Yonse", inst_name)~"Yonsei University", 
+                                     .default = inst_name)) %>%
+        summarise(#University = min(University),
+                  `Number of researchers` = , 
+                  `Average H-index` = mean(h23) %>% round(2), 
+                  `Average #papers` = mean(np6023) %>% round(2),
+                  `Average #citations` = mean(`nc9623 (ns)`) %>% round(2)
+                  ) %>% 
+        reactable::reactable(sortable = T, searchable = T, showPageSizeOptions = T)
+
+
+```
+
+
+### Correlation between instituion size and average rank in Korea
+
+```{R}
+data_raw %>%
+        subset(., .$cntry == "kor") %>%
+        group_by(inst_name, `sm-field`) %>%
+        mutate(University = ifelse(grepl("University|university|School|Yonsei|Institute of Science and Technology", inst_name), "University", "Non-university"),
+               .before = "inst_name") %>%
+        
+        mutate(inst_name = case_when(grepl("Daegu Gyeongbuk Institute of Science and Technology", inst_name)~"DGIST", 
+                                     grepl("Gwangju Institute of Science and Technology", inst_name)~"GIST", 
+                                     grepl("Korea Advanced Institute of Science and Technology", inst_name)~"KAIST", 
+                                     grepl("Ulsan National Institute of Science and Technology", inst_name)~"UNIST", 
+                                     grepl("Seoul National University", inst_name)~"Seoul National University",
+                                     grepl("Yonse", inst_name)~"Yonsei University", 
+                                     .default = inst_name)) %>%
+        summarise(University = min(University),
+                  Field = min(`sm-field`),
+                  `Average rank` = mean(rank) %>% round(2), `SD rank` = sd(rank) %>% round(2), `Number of researchers` = n()) %>% 
+        mutate(`Institution with < 5 researchers` = ifelse(`Number of researchers`< 5, "Under 5 researchers per Institution", "Over 5 researchers per Institution")) %>%
+        ggplot(., aes(x = `Number of researchers`, y = `Average rank`, col = University)) +
+        geom_point() +
+        theme_classic() +
+        MetBrewer::scale_color_met_d(name = "VanGogh2") + 
+        theme(legend.position = "top") +
+        scale_y_log10() +
+        facet_wrap(~`Institution with < 5 researchers`, scales = "free") +
+        geom_smooth(method = "lm")
+        #geom_text(aes(label = inst_name)) +
+        #ggrepel::geom_text_repel(aes(label = inst_name))
+        
+        
+        
+
+```
+### Correlation between instituion size and average rank in Korea - by field
+
+```{R}
+data_raw %>%
+        subset(., .$cntry == "kor") %>%
+        group_by(inst_name, `sm-field`) %>%
+        mutate(University = ifelse(grepl("University|university|School|Yonsei|Institute of Science and Technology", inst_name), "University", "Non-university"),
+               .before = "inst_name") %>%
+        
+        mutate(inst_name = case_when(grepl("Daegu Gyeongbuk Institute of Science and Technology", inst_name)~"DGIST", 
+                                     grepl("Gwangju Institute of Science and Technology", inst_name)~"GIST", 
+                                     grepl("Korea Advanced Institute of Science and Technology", inst_name)~"KAIST", 
+                                     grepl("Ulsan National Institute of Science and Technology", inst_name)~"UNIST", 
+                                     grepl("Seoul National University", inst_name)~"Seoul National University",
+                                     grepl("Yonse", inst_name)~"Yonsei University", 
+                                     .default = inst_name)) %>%
+        summarise(University = min(University),
+                  Field = min(`sm-field`),
+                  `Average rank` = mean(rank) %>% round(2), `SD rank` = sd(rank) %>% round(2), `Number of researchers` = n()) %>% 
+        ggplot(., aes(x = `Number of researchers`, y = `Average rank`, col = Field)) +
+        geom_point() +
+        theme_classic() +
+        #MetBrewer::scale_color_met_d(name = "Signac") +
+        theme(axis.text.x = element_blank(),
+              axis.text.y = element_blank()) +
+        scale_y_log10() +
+        facet_wrap(~Field,scales = "free_x") +
+        geom_smooth(method = "lm")
+        #geom_text(aes(label = inst_name)) +
+        #ggrepel::geom_text_repel(aes(label = inst_name))
+        
+        
+        
+
+```
+### Korean Institutions
+
+```{r}
+
+
+data_raw %>%
+        subset(., .$cntry == "kor") %>%
+        mutate(University = ifelse(grepl("University|university|School|Yonsei|Institute of Science and Technology", inst_name), "University", "Non-university"),
+               .before = "inst_name") %>%
+        mutate(inst_name = case_when(grepl("Daegu Gyeongbuk Institute of Science and Technology", inst_name)~"DGIST", 
+                                     grepl("Gwangju Institute of Science and Technology", inst_name)~"GIST", 
+                                     grepl("Korea Advanced Institute of Science and Technology", inst_name)~"KAIST", 
+                                     grepl("Ulsan National Institute of Science and Technology", inst_name)~"UNIST", 
+                                     grepl("Seoul National University", inst_name)~"Seoul National University",
+                                     grepl("Yonse", inst_name)~"Yonsei University", 
+                                     .default = inst_name)) %>%
+        group_by(inst_name) %>%
+        summarise(authfull = authfull,
+                  papers = np6023,
+                  citation =`nc9623 (ns)`,
+                  h = `h23 (ns)`,
+                  University = min(University),
+                  Field = min(`sm-field`),
+                  `Average rank` = mean(rank) %>% round(2), `SD rank` = sd(rank) %>% round(2), `Number of researchers` = n()) %>% 
+        ungroup() %>%
+        mutate(`Inha University` = ifelse(.$inst_name == "Inha University", "Inha University", "Others"),
+               inha_researcher = ifelse(.$inst_name == "Inha University", authfull, NA)) %>%
+        subset(., .$`Number of researchers` > 40) %>%
+        ggplot(., aes(x = papers, y = citation, col = `Inha University`)) +
+        
+        geom_point() +
+        theme_classic() +
+        MetBrewer::scale_color_met_d(name = "Egypt") +
+        theme(legend.position = "top") +
+        #      axis.text.y = element_blank()) +
+        scale_y_log10() +
+        labs(col= "Institutions in Korea") +
+        #facet_wrap(~Field,scales = "free_x") +
+        #geom_smooth(method = "lm") +
+        scale_y_log10() +
+        ylab("Total number of citations from 1996 to 2023") +
+        xlab("Total number of papers from 1960 to 2023") +
+        scale_x_log10() +
+        ggrepel::geom_label_repel(aes(label = inha_researcher), show.legend = F, max.overlaps = 17, fontface = "italic")
+        #geom_text(aes(label = inst_name)) +
+        #ggrepel::geom_text_repel(aes(label = inst_name))
+        
+        
+        
+
+
+
+```
+
+
+
+
+```{r warning=FALSE }
+#===============================================================================
+#BTC.LineZero.Footer.1.1.0
+#===============================================================================
+#R markdown citation generator.
+#===============================================================================
+#RLB.Dependencies:
+#   magrittr, pacman, stringr
+#=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+#BTC.Dependencies:
+#   LineZero.Header
+#===============================================================================
+#Generates citations for each explicitly loaded library.
+#=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+str_libraries <- c("r", str_libraries)
+for (str_libraries in str_libraries) {
+    str_libraries |>
+        pacman::p_citation() |>
+        print(bibtex = FALSE) |>
+        capture.output() %>%
+        .[-1:-3] %>% .[. != ""] |>
+        stringr::str_squish() |>
+        stringr::str_replace("_", "") |>
+        cat()
+    cat("\n")
+}
+#===============================================================================
+```
