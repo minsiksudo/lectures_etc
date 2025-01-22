@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Usage: ./copy_fastq_files.sh <source_directory> <destination_directory>
+# Usage: ./COD_sh_MGK_SICAS2_copy_batylor_files_tidy.sh <source_directory> <destination_directory>
 
 # Check if the correct number of arguments is provided
 if [ "$#" -ne 2 ]; then
