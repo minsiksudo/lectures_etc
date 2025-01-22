@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# This code is available online at https://github.com/minsiksudo/lectures_etc/blob/main/COD_sh_MGK_SICAS2_copy_batylor_files_tidy.sh
 # Usage: ./COD_sh_MGK_SICAS2_copy_batylor_files_tidy.sh <source_directory> <destination_directory>
 
 # Check if the correct number of arguments is provided
