@@ -1,6 +1,10 @@
 #!/bin/bash
-# This code is available online at https://github.com/minsiksudo/lectures_etc/blob/main/COD_sh_20250124_MGK_copy_SICAS2_files_HDDtoMacmini.sh
-# Usage: ./COD_sh_MGK_SICAS2_copy_batylor_files_tidy.sh <source_HDD> <destination_directory>
+# This code is available online at https://github.com/minsiksudo/lectures_etc/blob/main/COD_sh_20250124_MGK_HDDtoMac_onlySICAS2.sh
+# This code recognizes which file is SICAS2 dust raw sequencing files (by baylor ID), and will copy all the SICAS2 dust files from a given path of <source_HDD>.
+# For path for the inpuyt, both <source_HDD> and <source_HDD>/<your_sub_directory> can be used. 
+## For example
+# Usage 1, copying whole drive: ./COD_sh_MGK_SICAS2_copy_batylor_files_tidy.sh <source_HDD> <destination_directory>
+# Usage 2, copying a subdirectory: ./COD_sh_MGK_SICAS2_copy_batylor_files_tidy.sh <source_HDD>/<your_sub_directory> <destination_directory>
 
 #!/bin/bash
 
@@ -18,7 +22,7 @@ DEST_DIR="$2"
 
 # Define the range of patterns
 PATTERN_RANGES=(
-    "354-385" "387-460" "462-551" "553-580" "582-862" "871-918" "928-2132"
+    "354-385" "387-460" "462-551" "553-580" "582-862" "871-926" "928-1019" "1021-1049" "1051-1106" "1108-1204" "1206-1267" "1269-1290" "1292-1362" "1364-1382" "2013-2066" "2068-2079" "2081-2105" "2110-2119" "2123-2132"
 )
 
 # Check if source directory exists
@@ -53,5 +57,6 @@ done
 echo "All matching files have been copied to $DEST_DIR."
 
 # Instructions to run this script on macOS
-# 1. Make the script executable: chmod +x copy_fastq_files.sh
-# 2. Run the script: ./copy_fastq_files.sh /path/to/source /path/to/destination
+# 1. Make the script executable: chmod +x COD_sh_20250124_MGK_HDDtoMac_onlySICAS2.sh 
+## You need to specify the path of the code excatly. If the code is stored at Desktop page, execute > chmod +x Desktop/COD_sh_20250124_MGK_HDDtoMac_onlySICAS2.sh \
+# 2. Run the script: ./Desktop/COD_sh_20250124_MGK_HDDtoMac_onlySICAS2.sh /path/to/source /path/to/destination
