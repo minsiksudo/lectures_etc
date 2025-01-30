@@ -18,7 +18,10 @@ DEST_DIR="$2"
 
 # Define the range of patterns
 PATTERN_RANGES=(
-    "354-385" "387-460" "462-551" "553-580" "582-862" "871-926" "928-1019" "1021-1049" "1051-1106" "1108-1204" "1206-1267" "1269-1290" "1292-1362" "1364-1382" "2013-2066" "2068-2079" "2081-2105" "2110-2119" "2123-2132"
+    "354-385" "387-460" "462-551" "553-580" "582-862"
+    "871-926" "928-1019" "1021-1049" "1051-1106" "1108-1204"
+    "1206-1267" "1269-1290" "1292-1362" "1364-1382"
+    "2013-2066" "2068-2079" "2081-2105" "2110-2119" "2123-2132"
 )
 
 # Check if source directory exists
@@ -39,16 +42,26 @@ for RANGE in "${PATTERN_RANGES[@]}"; do
     END=${RANGE#*-}  # Extract end of range
 
     for ((PATTERN=START; PATTERN<=END; PATTERN++)); do
-        echo "Searching for files matching pattern: *_${PATTERN}_R*.fastq.gz"
-        
-        # Find subdirectories that match the exact pattern
-        SUBDIR_PATTERN=$(find "$SOURCE_DIR" -type d -regex ".*/[0-9]*$PATTERN[^0-9]*$")
+        echo "Searching for files with pattern: ${PATTERN}_R[12].fastq.gz"
 
-        for SUBDIR in $SUBDIR_PATTERN; do
+        # Find subdirectories that match the exact pattern
+        SUBDIRS=$(find "$SOURCE_DIR" -type d -regex ".*/[0-9]*${PATTERN}[^0-9]*$")
+        
+        for SUBDIR in $SUBDIRS; do
             echo "Searching in subdirectory: $SUBDIR"
+
+            # Log found files before copying
+            FILES_FOUND=$(find "$SUBDIR" -type f -regex ".*/${PATTERN}_R[12]\.fastq\.gz$")
             
-            # Use a stricter regex pattern to avoid incorrect partial matches
-            find "$SUBDIR" -type f -regex ".*_${PATTERN}_R[12]\.fastq\.gz$" -print0 | xargs -0 cp -t "$DEST_DIR"
+            if [[ -n "$FILES_FOUND" ]]; then
+                echo "Found files:"
+                echo "$FILES_FOUND"
+
+                # Copy only the correctly matched files
+                find "$SUBDIR" -type f -regex ".*/${PATTERN}_R[12]\.fastq\.gz$" -exec cp {} "$DEST_DIR" \;
+            else
+                echo "No matching files found in $SUBDIR"
+            fi
         done
     done
 done
