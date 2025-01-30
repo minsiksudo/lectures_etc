@@ -48,7 +48,7 @@ for RANGE in "${PATTERN_RANGES[@]}"; do
             echo "Searching in subdirectory: $SUBDIR"
             
             # Use a stricter regex pattern to avoid incorrect partial matches
-            find "$SUBDIR" -type f -regex ".*_${PATTERN}_R[12]\.fastq\.gz$" -exec cp {} "$DEST_DIR" \;
+            find "$SUBDIR" -type f -regex ".*_${PATTERN}_R[12]\.fastq\.gz$" -print0 | xargs -0 cp -t "$DEST_DIR"
         done
     done
 done
