@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# Base directory where the dummy structure will be created
+BASE_DIR="./Dummy_LaiSICAS"
+
+# Define the main folders
+mkdir -p "$BASE_DIR/$RECYCLE.BIN"
+mkdir -p "$BASE_DIR/READY_TO_SHIP"
+mkdir -p "$BASE_DIR/RawData_WGS"
+mkdir -p "$BASE_DIR/System Volume Information"
+
+# Create an example structure inside RawData_WGS
+PROJECTS=("p1039" "p1151" "p1152" "p1153" "p1154" "p1272" "p1457" "p1488" "p1532" "p1637" "p1638" "p1861" "p1902" "p854")
+
+for PROJECT in "${PROJECTS[@]}"; do
+    mkdir -p "$BASE_DIR/RawData_WGS/$PROJECT"
+    
+    # Creating subdirectories (example: numbered directories)
+    for i in {1..20}; do
+        mkdir -p "$BASE_DIR/RawData_WGS/$PROJECT/$i"
+
+        # Creating dummy fastq.gz files inside each subdirectory
+        touch "$BASE_DIR/RawData_WGS/$PROJECT/$i/${i}_R1.fastq.gz"
+        touch "$BASE_DIR/RawData_WGS/$PROJECT/$i/${i}_R2.fastq.gz"
+
+        # Creating a dummy md5 checksum file
+        touch "$BASE_DIR/RawData_WGS/$PROJECT/$i/md5sum.txt"
+    done
+done
+
+echo "Dummy file structure created at $BASE_DIR"
