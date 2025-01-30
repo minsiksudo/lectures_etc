@@ -6,10 +6,6 @@
 # Usage 1, copying whole drive: ./COD_sh_MGK_SICAS2_copy_batylor_files_tidy.sh <source_HDD> <destination_directory>
 # Usage 2, copying a subdirectory: ./COD_sh_MGK_SICAS2_copy_batylor_files_tidy.sh <source_HDD>/<your_sub_directory> <destination_directory>
 
-#!/bin/bash
-
-# Usage: ./copy_specific_files.sh <source_directory> <destination_directory>
-
 # Check if the correct number of arguments is provided
 if [ "$#" -ne 2 ]; then
     echo "Usage: $0 <source_directory> <destination_directory>"
@@ -43,20 +39,19 @@ for RANGE in "${PATTERN_RANGES[@]}"; do
     END=${RANGE#*-}  # Extract end of range
 
     for ((PATTERN=START; PATTERN<=END; PATTERN++)); do
-        echo "Searching for files matching pattern: *${PATTERN}*"
-        SUBDIR_PATTERN=$(find "$SOURCE_DIR" -type d -name "*$PATTERN")
+        echo "Searching for files matching pattern: *_${PATTERN}_R*.fastq.gz"
+        
+        # Find subdirectories that match the exact pattern
+        SUBDIR_PATTERN=$(find "$SOURCE_DIR" -type d -regex ".*/[0-9]*$PATTERN[^0-9]*$")
 
         for SUBDIR in $SUBDIR_PATTERN; do
             echo "Searching in subdirectory: $SUBDIR"
-            find "$SUBDIR" -type f -name "*_R*.fastq.gz" -exec cp {} "$DEST_DIR" \;
+            
+            # Use a stricter regex pattern to avoid incorrect partial matches
+            find "$SUBDIR" -type f -regex ".*_${PATTERN}_R[12]\.fastq\.gz$" -exec cp {} "$DEST_DIR" \;
         done
     done
 done
 
 # Print completion message
 echo "All matching files have been copied to $DEST_DIR."
-
-# Instructions to run this script on macOS
-# 1. Make the script executable: chmod +x COD_sh_20250124_MGK_HDDtoMac_onlySICAS2.sh 
-## You need to specify the path of the code excatly. If the code is stored at Desktop page, execute > chmod +x Desktop/COD_sh_20250124_MGK_HDDtoMac_onlySICAS2.sh \
-# 2. Run the script: ./Desktop/COD_sh_20250124_MGK_HDDtoMac_onlySICAS2.sh /path/to/source /path/to/destination
