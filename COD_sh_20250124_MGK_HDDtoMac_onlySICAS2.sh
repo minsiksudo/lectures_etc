@@ -5,6 +5,7 @@
 ## For example
 # Usage 1, copying whole drive: ./COD_sh_MGK_SICAS2_copy_batylor_files_tidy.sh <source_HDD> <destination_directory>
 # Usage 2, copying a subdirectory: ./COD_sh_MGK_SICAS2_copy_batylor_files_tidy.sh <source_HDD>/<your_sub_directory> <destination_directory>
+#!/bin/bash
 
 # Check if the correct number of arguments is provided
 if [ "$#" -ne 2 ]; then
@@ -57,8 +58,26 @@ for RANGE in "${PATTERN_RANGES[@]}"; do
                 echo "Found files:"
                 echo "$FILES_FOUND"
 
-                # Copy only the correctly matched files
-                find "$SUBDIR" -type f -regex ".*/${PATTERN}_R[12]\.fastq\.gz$" -exec cp {} "$DEST_DIR" \;
+                # Copy only the correctly matched files if they don't already exist in the destination directory or sizes differ
+                while IFS= read -r FILE; do
+                    BASENAME=$(basename "$FILE")
+                    DEST_FILE="$DEST_DIR/$BASENAME"
+                    
+                    if [ -f "$DEST_FILE" ]; then
+                        SRC_SIZE=$(stat --printf="%s" "$FILE")
+                        DEST_SIZE=$(stat --printf="%s" "$DEST_FILE")
+                        
+                        if [ "$SRC_SIZE" -eq "$DEST_SIZE" ]; then
+                            echo "File $DEST_FILE already exists and sizes match. Skipping."
+                            continue
+                        else
+                            echo "File $DEST_FILE exists but sizes differ. Recopying."
+                        fi
+                    fi
+                    
+                    echo "Copying $FILE to $DEST_FILE"
+                    cp "$FILE" "$DEST_FILE"
+                done <<< "$FILES_FOUND"
             else
                 echo "No matching files found in $SUBDIR"
             fi
