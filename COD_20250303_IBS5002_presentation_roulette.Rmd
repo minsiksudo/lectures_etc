@@ -1,0 +1,187 @@
+---
+title: "COD_20250304_MGK_IBS5002_presentation_roulette"
+author: "Minsik Kim"
+date: "2025-03-04"
+output:
+    rmdformats::downcute:
+        downcute_theme: "chaos"
+        code_folding: hide
+        fig_width: 8
+        fig_height: 8
+        df_print: paged
+editor_options: 
+  chunk_output_type: inline
+---
+
+<style>
+  /* Default light mode styles */
+  .reactable {
+    background-color: #ffffff !important; /* Light background */
+    color: #000000 !important;            /* Dark text */
+    border-color: #cccccc !important;     /* Light border */
+  }
+
+</style>
+
+<style>
+  body {
+    font-family: "Times New Roman", serif;
+  }
+</style>
+
+## Loading packages
+
+```{r setup, warning = FALSE}
+#===============================================================================
+#BTC.LineZero.Header.1.1.0
+#===============================================================================
+#R Markdown environment setup and reporting utility.
+#===============================================================================
+#RLB.Dependencies:
+#   knitr, magrittr, pacman, rio, rmarkdown, rmdformats, tibble, yaml
+#===============================================================================
+#Input for document parameters, libraries, file paths, and options.
+#=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=
+
+
+path_working <- 
+        ifelse(sessionInfo()[1]$R.version$platform == "x86_64-pc-linux-gnu",
+               "/mnt/4T_samsung/Dropbox/",
+               ifelse(sessionInfo()[1]$R.version$platform == "aarch64-apple-darwin20",
+                      "/Volumes/macdrive/Dropbox/", 
+                      "/Users/minsikkim/Dropbox (Personal)/"))
+path_library <- 
+        ifelse(sessionInfo()[1]$R.version$platform == "x86_64-pc-linux-gnu",
+               "/home/bagel/R_lib/",
+               "/Library/Frameworks/R.framework/Resources/library/")
+
+
+
+str_libraries <- c("readxl", "phyloseq", "tidyverse", "pacman", "yaml", "ggplot2", "vegan", "microbiome", "ggpubr", "viridis", "decontam", "gridExtra", "ggpubr", "lme4", "lmerTest", "writexl", "harrietr", "Maaslin2", "ggtext", "mgcv", "ggpmisc", "janitor", "breakaway", "decontam", "reactable", "reactablefmtr", "ggh4x", "ggtree", "harrietr", "caret", "mixOmics", "qvalue", "DT", "gginnards", "htmltools", "kableExtra")
+
+        
+YAML_header <-
+'---
+title: "COD_20250304_MGK_IBS5002_presentation_roulette"
+author: "Minsik Kim"
+date: "2025.03.04"
+output:
+    rmdformats::downcute:
+        downcute_theme: "chaos"
+        code_folding: hide
+        fig_width: 8
+        fig_height: 8
+---'
+
+seed <- "20250304"
+
+#=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+#Loads libraries, file paths, and other document options.
+#=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+FUN.LineZero.Boot <- function() {
+    .libPaths(path_library)
+
+    require(pacman)
+    pacman::p_load(c("knitr", "rmarkdown", "rmdformats", "yaml"))
+
+    knitr::opts_knit$set(root.dir = path_working)
+
+    str_libraries |> unique() |> sort() -> str_libraries
+    pacman::p_load(char = str_libraries)
+
+    set.seed(seed)
+}
+
+FUN.LineZero.Boot()
+#=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+#Outputs R environment report.
+#=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+FUN.LineZero.Report <- function() {
+    cat("Line Zero Environment:\n\n")
+    paste("R:", pacman::p_version(), "\n") |> cat()
+    cat("Libraries:\n")
+    for (str_libraries in str_libraries) {
+        paste(
+            "    ", str_libraries, ": ", pacman::p_version(package = str_libraries),
+            "\n", sep = ""
+        ) |> cat()
+    }
+    paste("\nOperating System:", pacman::p_detectOS(), "\n") |> cat()
+    paste("    Library Path:", path_library, "\n") |> cat()
+    paste("    Working Path:", path_working, "\n") |> cat()
+    paste("Seed:", seed, "\n\n") |> cat()
+    cat("YAML Header:\n")
+    cat(YAML_header)
+}
+FUN.LineZero.Report()
+
+```
+
+
+
+# Data loading
+
+```{r}
+
+# Define dates, events, and lecture status
+dates <- c("3/5", "3/12", "3/19", "3/26", "4/2", "4/9", "4/16", "4/23", "4/30", "5/7", "5/14", "5/21", "5/28", "6/4")
+events <- c(NA, NA, NA, NA, "KSBB, 생물공학회", NA, NA, "KIChe, 화공학회", NA, NA, "KBCS, MembSK, 바이오칩학회, 막학회", NA, "ASME, 미생물학회", "KSIEC, 공업화학회")
+no_lecture <- c(FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE)
+
+
+# Read student data
+ids <- read_excel('/Volumes/macdrive/Dropbox/Inha/5_Lectures/2025/2025_IBS5001_Thesis pre-defence/2025S_IBS5002_predefense_attendance book.xlsx', skip = 6) %>% 
+        subset(., !is.na(...4)) %>%
+        select(...4, ...5) %>%
+        rename(studentid = ...4, name = ...5) %>%
+        mutate(id = paste0(studentid, " ", name))
+
+
+
+```
+
+
+```{r}
+
+
+# Shuffle student list
+set.seed(seed)  # Set seed for reproducibility
+students <- sample(ids$id, nrow(ids))
+
+# Identify dates that require presenters
+presentation_days <- which(no_lecture == FALSE)
+num_presentation_days <- length(presentation_days)
+
+# Assign students from the last lecture date needing presentations
+assignments <- list()
+student_index <- 1  # Track assigned students
+
+for (i in rev(presentation_days)) {
+    if (student_index <= length(students)) {
+        num_students <- ifelse(student_index + 3 > length(students), length(students) - student_index + 1, 4)  # Assign 3 if only 3 remain
+        assignments[[dates[i]]] <- students[student_index:(student_index + num_students - 1)]
+        student_index <- student_index + num_students
+    }
+}
+
+# Create final data frame
+schedule <- data.frame(dates, events, no_lecture) %>%
+    mutate(
+        presenter1 = sapply(dates, function(d) ifelse(d %in% names(assignments), assignments[[d]][1], NA)),
+        presenter2 = sapply(dates, function(d) ifelse(d %in% names(assignments) & length(assignments[[d]]) > 1, assignments[[d]][2], NA)),
+        presenter3 = sapply(dates, function(d) ifelse(d %in% names(assignments) & length(assignments[[d]]) > 2, assignments[[d]][3], NA)),
+        presenter4 = sapply(dates, function(d) ifelse(d %in% names(assignments) & length(assignments[[d]]) > 3, assignments[[d]][4], NA))
+    )
+
+schedule %>%
+        select(dates, events, presenter1, presenter2, presenter3, presenter4) %>%
+        kableExtra::kable(format = "html", escape = FALSE) %>%
+        kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE) 
+
+
+```
+
+
+
+
+
